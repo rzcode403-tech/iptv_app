@@ -161,17 +161,6 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text('Add an M3U playlist to start watching',
                 style: TextStyle(color: Color(0xFF7C8DB0), fontSize: 14),
                 textAlign: TextAlign.center),
-            const SizedBox(height: 28),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.play_circle_outline_rounded),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00D4FF),
-                foregroundColor: const Color(0xFF080C14),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-              ),
-            ),
           ],
         ),
       ),
