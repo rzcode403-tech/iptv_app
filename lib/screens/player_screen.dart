@@ -24,7 +24,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   String? _errorMessage;
   bool _showControls = true;
   bool _isFullscreen = false;
-  late AnimatedController _fadeController;
+  
 
   @override
   void initState() {
