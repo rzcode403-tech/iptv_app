@@ -163,9 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 textAlign: TextAlign.center),
             const SizedBox(height: 28),
             ElevatedButton.icon(
-              onPressed: provider.loadDemoPlaylist,
               icon: const Icon(Icons.play_circle_outline_rounded),
-              label: const Text('Try Demo Playlist'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D4FF),
                 foregroundColor: const Color(0xFF080C14),
