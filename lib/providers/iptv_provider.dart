@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/channel.dart';
 import '../services/m3u_parser.dart';
 
@@ -29,7 +30,6 @@ class IPTVProvider extends ChangeNotifier {
       _playlists.isEmpty ? null : _playlists[_selectedPlaylistIndex];
 
   List<Channel> get allChannels => currentPlaylist?.channels ?? [];
-
   List<String> get groups => currentPlaylist?.groups ?? [];
 
   List<Channel> get filteredChannels {
@@ -47,31 +47,26 @@ class IPTVProvider extends ChangeNotifier {
     return channels;
   }
 
-  IPTVProvider() {
-    _loadData();
-  }
+  IPTVProvider() { _loadData(); }
 
   Future<void> _loadData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final playlistsJson = prefs.getString('playlists');
-      if (playlistsJson != null) {
-        final List decoded = json.decode(playlistsJson) as List;
-        _playlists = decoded
+      final pj = prefs.getString('playlists');
+      if (pj != null) {
+        _playlists = (json.decode(pj) as List)
             .map((p) => Playlist.fromJson(p as Map<String, dynamic>))
             .toList();
       }
-      final favJson = prefs.getString('favorites');
-      if (favJson != null) {
-        final List decoded = json.decode(favJson) as List;
-        _favorites = decoded
+      final fj = prefs.getString('favorites');
+      if (fj != null) {
+        _favorites = (json.decode(fj) as List)
             .map((c) => Channel.fromJson(c as Map<String, dynamic>))
             .toList();
       }
-      final recentJson = prefs.getString('recent');
-      if (recentJson != null) {
-        final List decoded = json.decode(recentJson) as List;
-        _recentChannels = decoded
+      final rj = prefs.getString('recent');
+      if (rj != null) {
+        _recentChannels = (json.decode(rj) as List)
             .map((c) => Channel.fromJson(c as Map<String, dynamic>))
             .toList();
       }
@@ -95,37 +90,79 @@ class IPTVProvider extends ChangeNotifier {
     }
   }
 
+  // إضافة playlist من رابط
   Future<void> addPlaylist(String name, String url) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
       final channels = await M3UParser.parseFromUrl(url);
-      final playlist = Playlist(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: name,
-        url: url,
-        channels: channels,
-        addedAt: DateTime.now(),
-        lastUpdated: DateTime.now(),
-      );
-      _playlists.add(playlist);
-      _selectedPlaylistIndex = _playlists.length - 1;
-      await _saveData();
+      _addPlaylistData(name, url, channels);
     } catch (e) {
-      _error = e.toString();
+      _error = 'فشل تحميل القائمة: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
+  // إضافة playlist من ملف محلي
+  Future<void> addPlaylistFromFile() async {
+    _error = null;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['m3u', 'm3u8', 'txt'],
+        withData: false,
+        withReadStream: false,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      final filePath = file.path;
+
+      if (filePath == null) {
+        _error = 'لا يمكن الوصول للملف';
+        notifyListeners();
+        return;
+      }
+
+      _isLoading = true;
+      notifyListeners();
+
+      final channels = await M3UParser.parseFromFile(filePath);
+      final name = file.name.replaceAll(RegExp(r'\.(m3u8?|txt)$'), '');
+      _addPlaylistData(name, filePath, channels);
+    } catch (e) {
+      _error = 'خطأ في قراءة الملف: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void _addPlaylistData(String name, String url, List<Channel> channels) {
+    final playlist = Playlist(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: name,
+      url: url,
+      channels: channels,
+      addedAt: DateTime.now(),
+      lastUpdated: DateTime.now(),
+    );
+    _playlists.add(playlist);
+    _selectedPlaylistIndex = _playlists.length - 1;
+    _saveData();
+  }
+
   Future<void> refreshPlaylist(int index) async {
     if (index >= _playlists.length) return;
+    final p = _playlists[index];
+    if (p.url.startsWith('/') || p.url == 'demo') return;
     _isLoading = true;
     notifyListeners();
     try {
-      final p = _playlists[index];
       final channels = await M3UParser.parseFromUrl(p.url);
       _playlists[index] = Playlist(
         id: p.id, name: p.name, url: p.url,
@@ -172,18 +209,14 @@ class IPTVProvider extends ChangeNotifier {
   }
 
   void toggleFavorite(Channel channel) {
-    final index = _favorites.indexWhere((c) => c.id == channel.id);
-    if (index >= 0) {
-      _favorites.removeAt(index);
-    } else {
-      _favorites.add(channel);
-    }
+    final i = _favorites.indexWhere((c) => c.id == channel.id);
+    if (i >= 0) _favorites.removeAt(i);
+    else _favorites.add(channel);
     _saveData();
     notifyListeners();
   }
 
-  bool isFavorite(Channel channel) =>
-      _favorites.any((c) => c.id == channel.id);
+  bool isFavorite(Channel channel) => _favorites.any((c) => c.id == channel.id);
 
   void setSelectedGroup(String? group) {
     _selectedGroup = group;
@@ -195,37 +228,5 @@ class IPTVProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clearError() {
-    _error = null;
-    notifyListeners();
-  }
-
-  Future<void> loadDemoPlaylist() async {
-    _isLoading = true;
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final demoChannels = [
-      Channel(id: 'd1', name: 'Al Jazeera English', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Aljazeera_eng.svg/240px-Aljazeera_eng.svg.png', group: 'News'),
-      Channel(id: 'd2', name: 'France 24 English', url: 'https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/France24_logo.svg/240px-France24_logo.svg.png', group: 'News'),
-      Channel(id: 'd3', name: 'NASA TV', url: 'https://nasa-i.akamaihd.net/hls/live/253565/NASA-NTV1-HLS/master.m3u8', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/NASA_logo.svg/200px-NASA_logo.svg.png', group: 'Science'),
-      Channel(id: 'd4', name: 'DW English', url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Deutsche_Welle_symbol_2012.svg/200px-Deutsche_Welle_symbol_2012.svg.png', group: 'News'),
-      Channel(id: 'd5', name: 'Euronews', url: 'https://euronews-euronews-arabic-1-eg.samsung.wurl.tv/playlist.m3u8', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Euronews_logo.svg/220px-Euronews_logo.svg.png', group: 'News'),
-    ];
-
-    final playlist = Playlist(
-      id: 'demo',
-      name: '📺 Demo Playlist',
-      url: 'demo',
-      channels: demoChannels,
-      addedAt: DateTime.now(),
-      lastUpdated: DateTime.now(),
-    );
-
-    _playlists.add(playlist);
-    _selectedPlaylistIndex = _playlists.length - 1;
-    _isLoading = false;
-    await _saveData();
-    notifyListeners();
-  }
+  void clearError() { _error = null; notifyListeners(); }
 }
