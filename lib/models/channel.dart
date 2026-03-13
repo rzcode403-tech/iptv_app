@@ -4,7 +4,6 @@ class Channel {
   final String url;
   final String? logo;
   final String? group;
-  final String? epgId;
   bool isFavorite;
   DateTime? lastWatched;
 
@@ -14,7 +13,6 @@ class Channel {
     required this.url,
     this.logo,
     this.group,
-    this.epgId,
     this.isFavorite = false,
     this.lastWatched,
   });
@@ -22,11 +20,10 @@ class Channel {
   factory Channel.fromM3U(Map<String, dynamic> data) {
     return Channel(
       id: data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: data['name'] ?? 'Unknown Channel',
+      name: data['name'] ?? 'Unknown',
       url: data['url'] ?? '',
       logo: data['tvg-logo'] ?? data['logo'],
       group: data['group-title'] ?? data['group'],
-      epgId: data['tvg-id'],
     );
   }
 
@@ -36,7 +33,6 @@ class Channel {
     String? url,
     String? logo,
     String? group,
-    String? epgId,
     bool? isFavorite,
     DateTime? lastWatched,
   }) {
@@ -46,7 +42,6 @@ class Channel {
       url: url ?? this.url,
       logo: logo ?? this.logo,
       group: group ?? this.group,
-      epgId: epgId ?? this.epgId,
       isFavorite: isFavorite ?? this.isFavorite,
       lastWatched: lastWatched ?? this.lastWatched,
     );
@@ -58,21 +53,19 @@ class Channel {
     'url': url,
     'logo': logo,
     'group': group,
-    'epgId': epgId,
     'isFavorite': isFavorite,
     'lastWatched': lastWatched?.toIso8601String(),
   };
 
   factory Channel.fromJson(Map<String, dynamic> json) => Channel(
-    id: json['id'],
-    name: json['name'],
-    url: json['url'],
+    id: json['id'] ?? '',
+    name: json['name'] ?? '',
+    url: json['url'] ?? '',
     logo: json['logo'],
     group: json['group'],
-    epgId: json['epgId'],
     isFavorite: json['isFavorite'] ?? false,
     lastWatched: json['lastWatched'] != null
-        ? DateTime.parse(json['lastWatched'])
+        ? DateTime.tryParse(json['lastWatched'])
         : null,
   );
 }
@@ -95,13 +88,13 @@ class Playlist {
   });
 
   List<String> get groups {
-    final groups = channels
+    final g = channels
         .where((c) => c.group != null && c.group!.isNotEmpty)
         .map((c) => c.group!)
         .toSet()
         .toList();
-    groups.sort();
-    return groups;
+    g.sort();
+    return g;
   }
 
   Map<String, dynamic> toJson() => {
@@ -114,15 +107,15 @@ class Playlist {
   };
 
   factory Playlist.fromJson(Map<String, dynamic> json) => Playlist(
-    id: json['id'],
-    name: json['name'],
-    url: json['url'],
+    id: json['id'] ?? '',
+    name: json['name'] ?? '',
+    url: json['url'] ?? '',
     channels: (json['channels'] as List? ?? [])
-        .map((c) => Channel.fromJson(c))
+        .map((c) => Channel.fromJson(c as Map<String, dynamic>))
         .toList(),
-    addedAt: DateTime.parse(json['addedAt']),
+    addedAt: DateTime.tryParse(json['addedAt'] ?? '') ?? DateTime.now(),
     lastUpdated: json['lastUpdated'] != null
-        ? DateTime.parse(json['lastUpdated'])
+        ? DateTime.tryParse(json['lastUpdated'])
         : null,
   );
 }

@@ -1,4 +1,4 @@
-package com.example.iptv_pro
+package tn.rzcode.iptv
 
 import io.flutter.embedding.android.FlutterActivity
 

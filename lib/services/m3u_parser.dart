@@ -3,61 +3,50 @@ import '../models/channel.dart';
 
 class M3UParser {
   static Future<List<Channel>> parseFromUrl(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 30),
-      );
-      if (response.statusCode == 200) {
-        return parseContent(response.body);
-      }
-      throw Exception('Failed to load playlist: ${response.statusCode}');
-    } catch (e) {
-      throw Exception('Error loading playlist: $e');
+    final response = await http.get(Uri.parse(url)).timeout(
+      const Duration(seconds: 30),
+    );
+    if (response.statusCode == 200) {
+      return parseContent(response.body);
     }
+    throw Exception('HTTP ${response.statusCode}');
   }
 
   static List<Channel> parseContent(String content) {
     final channels = <Channel>[];
     final lines = content.split('\n');
-    
+
     if (lines.isEmpty || !lines.first.trim().startsWith('#EXTM3U')) {
-      throw Exception('Invalid M3U file format');
+      throw Exception('Invalid M3U format');
     }
 
     Map<String, String> currentInfo = {};
-    int channelIndex = 0;
+    int index = 0;
 
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i].trim();
-      
-      if (line.startsWith('#EXTINF:')) {
-        currentInfo = _parseExtInf(line);
-        currentInfo['id'] = 'ch_${channelIndex++}';
-      } else if (line.isNotEmpty && !line.startsWith('#') && currentInfo.isNotEmpty) {
-        currentInfo['url'] = line;
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('#EXTINF:')) {
+        currentInfo = _parseExtInf(trimmed);
+        currentInfo['id'] = 'ch_${index++}';
+      } else if (trimmed.isNotEmpty && !trimmed.startsWith('#') && currentInfo.isNotEmpty) {
+        currentInfo['url'] = trimmed;
         channels.add(Channel.fromM3U(currentInfo));
         currentInfo = {};
       }
     }
-
     return channels;
   }
 
   static Map<String, String> _parseExtInf(String line) {
     final info = <String, String>{};
-    
-    // Extract attributes
-    final attrRegex = RegExp(r'(\w[\w-]*)="([^"]*)"');
+    final attrRegex = RegExp(r'([\w-]+)="([^"]*)"');
     for (final match in attrRegex.allMatches(line)) {
       info[match.group(1)!] = match.group(2)!;
     }
-    
-    // Extract channel name (last part after comma)
     final commaIndex = line.lastIndexOf(',');
     if (commaIndex != -1) {
       info['name'] = line.substring(commaIndex + 1).trim();
     }
-    
     return info;
   }
 }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
 import '../models/channel.dart';
-import '../utils/app_theme.dart';
 
 class ChannelCard extends StatelessWidget {
   final Channel channel;
@@ -28,10 +26,14 @@ class ChannelCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary.withOpacity(0.12) : AppTheme.card,
+          color: isSelected
+              ? const Color(0xFF00D4FF).withOpacity(0.12)
+              : const Color(0xFF1A2235),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? AppTheme.primary.withOpacity(0.5) : AppTheme.border,
+            color: isSelected
+                ? const Color(0xFF00D4FF).withOpacity(0.5)
+                : const Color(0xFF252D3F),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -39,10 +41,8 @@ class ChannelCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Logo
               _buildLogo(),
               const SizedBox(width: 14),
-              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,10 +50,11 @@ class ChannelCard extends StatelessWidget {
                     Text(
                       channel.name,
                       style: TextStyle(
-                        color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+                        color: isSelected
+                            ? const Color(0xFF00D4FF)
+                            : const Color(0xFFEEF2FF),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -63,10 +64,9 @@ class ChannelCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            width: 6,
-                            height: 6,
+                            width: 6, height: 6,
                             decoration: const BoxDecoration(
-                              color: AppTheme.live,
+                              color: Color(0xFFFF2D55),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -74,10 +74,9 @@ class ChannelCard extends StatelessWidget {
                           Text(
                             'LIVE • ${channel.group}',
                             style: const TextStyle(
-                              color: AppTheme.textSecondary,
+                              color: Color(0xFF7C8DB0),
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
-                              letterSpacing: 0.3,
                             ),
                           ),
                         ],
@@ -86,32 +85,19 @@ class ChannelCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Favorite button
               if (onFavoriteToggle != null)
                 GestureDetector(
                   onTap: onFavoriteToggle,
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
                     padding: const EdgeInsets.all(6),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Icon(
-                        isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
-                        key: ValueKey(isFavorite),
-                        color: isFavorite ? AppTheme.accentGold : AppTheme.textMuted,
-                        size: 20,
-                      ),
+                    child: Icon(
+                      isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
+                      color: isFavorite
+                          ? const Color(0xFFFFB800)
+                          : const Color(0xFF3D4F6B),
+                      size: 20,
                     ),
-                  ),
-                ),
-              if (isSelected)
-                Container(
-                  margin: const EdgeInsets.only(left: 6),
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.primary,
-                    shape: BoxShape.circle,
                   ),
                 ),
             ],
@@ -123,12 +109,11 @@ class ChannelCard extends StatelessWidget {
 
   Widget _buildLogo() {
     return Container(
-      width: 52,
-      height: 52,
+      width: 52, height: 52,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceElevated,
+        color: const Color(0xFF161E2E),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.border),
+        border: Border.all(color: const Color(0xFF252D3F)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(9),
@@ -136,23 +121,23 @@ class ChannelCard extends StatelessWidget {
             ? CachedNetworkImage(
                 imageUrl: channel.logo!,
                 fit: BoxFit.contain,
-                placeholder: (context, url) => _buildPlaceholder(),
-                errorWidget: (context, url, error) => _buildPlaceholder(),
+                placeholder: (_, __) => _placeholder(),
+                errorWidget: (_, __, ___) => _placeholder(),
               )
-            : _buildPlaceholder(),
+            : _placeholder(),
       ),
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _placeholder() {
     final letter = channel.name.isNotEmpty ? channel.name[0].toUpperCase() : '?';
     return Container(
-      color: AppTheme.surfaceElevated,
+      color: const Color(0xFF161E2E),
       child: Center(
         child: Text(
           letter,
           style: const TextStyle(
-            color: AppTheme.primary,
+            color: Color(0xFF00D4FF),
             fontSize: 20,
             fontWeight: FontWeight.w800,
           ),
@@ -167,16 +152,12 @@ class ChannelCardShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: AppTheme.card,
-      highlightColor: AppTheme.surfaceElevated,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        height: 76,
-        decoration: BoxDecoration(
-          color: AppTheme.card,
-          borderRadius: BorderRadius.circular(14),
-        ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      height: 76,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A2235),
+        borderRadius: BorderRadius.circular(14),
       ),
     );
   }
