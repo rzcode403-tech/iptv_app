@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/iptv_provider.dart';
 import 'screens/main_shell.dart';
 import 'utils/app_theme.dart';
@@ -8,6 +9,9 @@ import 'utils/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize SharedPreferences before app starts
+  await SharedPreferences.getInstance();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -32,6 +36,9 @@ class IPTVApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         home: const MainShell(),
+        builder: (context, child) {
+          return child ?? const SizedBox();
+        },
       ),
     );
   }
